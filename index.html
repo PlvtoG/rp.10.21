@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>For Madison ❤️</title>
+  <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
+
+  <style>
+    /* ===== COLORS ===== */
+    :root {
+      --main: #E07A8A;      /* soft rose red */
+      --dark: #9E3B4D;      /* deep wine for text */
+      --paper: #FFF8F6;     /* warm letter paper */
+      --env-back: #C95A6C;  /* inside of the envelope */
+      --env-front: #E48896; /* front pocket */
+      --flap: #D86F80;      /* top flap */
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: linear-gradient(180deg, #FDEEF0 0%, #F8D3D8 100%);
+      background-attachment: fixed;
+      font-family: 'Quicksand', sans-serif;
+      color: var(--dark);
+      text-align: center;
+      overflow-x: hidden;
+    }
+
+    /* each screen fills the page; only one shows at a time */
+    .screen {
+      display: none;
+      position: relative;
+      z-index: 1;               /* above the falling petals */
+      min-height: 100vh;
+      padding: 20px;
+      box-sizing: border-box;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+    }
+    .screen.show { display: flex; animation: fadeIn 0.7s ease; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(15px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ===== SCREEN 1: "a note needs to be read" ===== */
+    .notif {
+      background: white;
+      border: 2px solid #F4B6C0;
+      border-radius: 20px;
+      padding: 30px 40px;
+      box-shadow: 0 8px 25px rgba(158, 59, 77, 0.2);
+      cursor: pointer;
+      position: relative;
+    }
+    .notif .icon { font-size: 50px; }
+
+    /* the words that type out at the start */
+    .intro { min-height: 150px; margin-bottom: 20px; }
+    .type-line {
+      font-family: 'Dancing Script', cursive;
+      font-size: 30px;
+      margin: 6px 0;
+      min-height: 40px;
+    }
+    /* blinking cursor while typing */
+    .type-line.typing::after {
+      content: '|';
+      margin-left: 2px;
+      animation: blink 0.7s step-end infinite;
+    }
+    @keyframes blink { 50% { opacity: 0; } }
+
+    /* the note is hidden until the typing is done */
+    .note-area {
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 1s ease, transform 1s ease;
+      pointer-events: none;
+    }
+    .note-area.show { opacity: 1; transform: translateY(0); pointer-events: auto; }
+
+    /* soft heartbeat glow around the note */
+    .note-area.show .notif { animation: heartbeat 1.6s ease-in-out infinite; }
+    @keyframes heartbeat {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(224, 122, 138, 0.5), 0 8px 25px rgba(158, 59, 77, 0.2); transform: scale(1); }
+      15%      { transform: scale(1.03); }
+      30%      { transform: scale(1); }
+      45%      { transform: scale(1.03); }
+      70%      { box-shadow: 0 0 0 22px rgba(224, 122, 138, 0), 0 8px 25px rgba(158, 59, 77, 0.2); transform: scale(1); }
+    }
+    .badge {
+      position: absolute;
+      top: 15px; right: 20px;
+      background: #D93A4E;
+      color: white;
+      width: 26px; height: 26px;
+      border-radius: 50%;
+      font-weight: 700;
+      line-height: 26px;
+      animation: pulse 1.2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50%      { transform: scale(1.25); }
+    }
+    .pointer {
+      font-size: 40px;
+      margin-top: 15px;
+      animation: bounce 0.9s ease-in-out infinite;
+    }
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50%      { transform: translateY(-12px); }
+    }
+
+    /* ===== SCREEN 2: the envelope =====
+       Layers, back to front:
+       1. envelope back (inside)
+       2. the letter card
+       3. the front pocket (covers the bottom of the letter)
+       4. the top flap (closed) */
+    .envelope-wrap { perspective: 900px; margin-top: 90px; }
+    .envelope {
+      position: relative;
+      width: 300px; height: 190px;
+      background: var(--env-back);
+      border-radius: 10px;
+      cursor: pointer;
+      box-shadow: 0 10px 30px rgba(158, 59, 77, 0.3);
+      transition: transform 0.8s ease, opacity 0.8s ease;
+    }
+    .card {
+      position: absolute;
+      left: 16px; right: 16px; bottom: 10px;
+      height: 165px;
+      background: var(--paper);
+      border-radius: 6px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+      z-index: 2;
+      padding-top: 18px;
+      box-sizing: border-box;
+      font-family: 'Dancing Script', cursive;
+      font-size: 24px;
+      transition: transform 1.2s cubic-bezier(.3,.8,.3,1);
+    }
+    .pocket {
+      position: absolute;
+      inset: 0;
+      background: var(--env-front);
+      border-radius: 10px;
+      clip-path: polygon(0 0, 50% 52%, 100% 0, 100% 100%, 0 100%);
+      z-index: 3;
+    }
+    .flap {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: var(--flap);
+      clip-path: polygon(0 0, 100% 0, 50% 58%);
+      transform-origin: top;
+      z-index: 4;
+      transition: transform 0.7s ease, z-index 0s linear 0.35s;
+    }
+    .seal {
+      position: absolute;
+      top: 88px; left: 50%;
+      transform: translateX(-50%);
+      font-size: 30px;
+      z-index: 5;
+      transition: opacity 0.3s;
+    }
+
+    /* step 1: flap opens */
+    .envelope.open .flap { transform: rotateX(180deg); z-index: 1; }
+    .envelope.open .seal { opacity: 0; }
+    /* step 2: the letter slides up out of the envelope */
+    .envelope.pull .card { transform: translateY(-150px); }
+    /* step 3: envelope drops away */
+    .envelope.away { transform: translateY(80px) scale(0.9); opacity: 0; }
+
+    /* ===== SCREEN 3: the love letter ===== */
+    #screen3 { justify-content: flex-start; padding-top: 30px; }
+    .letter {
+      position: relative;
+      background: var(--paper);
+      max-width: 520px;
+      width: 100%;
+      padding: 32px 26px;
+      box-sizing: border-box;
+      border-radius: 14px;
+      box-shadow: 0 8px 25px rgba(158, 59, 77, 0.2);
+      text-align: left;
+      transform-origin: top center;
+    }
+    /* the letter "unfolds" when it first appears */
+    #screen3.show .letter { animation: unfold 0.9s ease; }
+    @keyframes unfold {
+      from { transform: scaleY(0.25) translateY(60px); opacity: 0.3; }
+      to   { transform: scaleY(1) translateY(0); opacity: 1; }
+    }
+    .letter h1 {
+      font-family: 'Dancing Script', cursive;
+      font-size: 34px;
+      margin: 0 0 18px;
+    }
+    .letter p {
+      line-height: 1.7;
+      margin: 0 0 16px;
+      opacity: 0;                          /* hidden until it fades in */
+      animation: fadeIn 1s ease forwards;
+    }
+    .letter .signoff {
+      font-family: 'Dancing Script', cursive;
+      font-size: 26px;
+      text-align: right;
+    }
+    .corner {
+      position: absolute;
+      font-size: 34px;
+      line-height: 1;
+      pointer-events: none;
+    }
+    .corner.tl { top: -18px; left: -14px; transform: rotate(-20deg); }
+    .corner.tr { top: -18px; right: -14px; transform: rotate(20deg); }
+    .corner.bl { bottom: -16px; left: -14px; transform: rotate(15deg); }
+    .corner.br { bottom: -16px; right: -14px; transform: rotate(-15deg); }
+    .divider {
+      text-align: center;
+      color: var(--main);
+      letter-spacing: 8px;
+      margin: -6px 0 20px;
+      font-size: 18px;
+    }
+
+    /* ===== buttons ===== */
+    button {
+      font-family: 'Quicksand', sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      border: none;
+      border-radius: 25px;
+      padding: 12px 30px;
+      margin: 8px;
+      cursor: pointer;
+    }
+    .main-btn { background: var(--main); color: white; }
+    #noBtn { background: white; color: var(--dark); }
+    #nextBtn { margin: 25px 0 40px; opacity: 0; animation: fadeIn 1s ease forwards; }
+
+    /* ===== SCREEN 4: the big question ===== */
+    .question {
+      font-family: 'Dancing Script', cursive;
+      font-size: 42px;
+      max-width: 420px;
+      margin: 0 0 25px;
+    }
+    .rose-row {
+      font-size: 30px;
+      letter-spacing: 6px;
+      margin: 10px 0;
+      animation: sway 3s ease-in-out infinite;
+    }
+    @keyframes sway {
+      0%, 100% { transform: rotate(-3deg); }
+      50%      { transform: rotate(3deg); }
+    }
+
+    /* ===== SCREEN 5: she said yes ===== */
+    .yay { font-family: 'Dancing Script', cursive; font-size: 48px; margin: 0; }
+    .float-heart {
+      position: fixed;
+      bottom: -40px;
+      font-size: 30px;
+      z-index: 2;
+      animation: rise 4.5s linear forwards;
+      pointer-events: none;
+    }
+    @keyframes rise {
+      to { transform: translateY(-115vh) rotate(25deg); opacity: 0; }
+    }
+
+    /* ===== REAL-LOOKING FALLING PETALS =====
+       Each petal has two layers:
+       - .petal-fall moves it down the screen and sways side to side
+       - .petal is the petal shape itself, which flutters and flips in 3D */
+    .petal-fall {
+      position: fixed;
+      top: -40px;
+      z-index: 0;
+      pointer-events: none;
+      animation: fall linear forwards;
+    }
+    @keyframes fall {
+      0%   { transform: translate(0, 0); }
+      25%  { transform: translate(30px, 28vh); }
+      50%  { transform: translate(-25px, 56vh); }
+      75%  { transform: translate(25px, 84vh); }
+      100% { transform: translate(-10px, 112vh); }
+    }
+    .petal {
+      opacity: 0.95;
+      filter: drop-shadow(1px 3px 3px rgba(120, 20, 40, 0.25));
+      animation: flutter ease-in-out infinite;
+    }
+    .petal svg { display: block; }
+    /* smaller petals look farther away, so make them softer */
+    .petal.far { opacity: 0.6; filter: blur(0.6px); }
+    @keyframes flutter {
+      0%   { transform: rotateX(0deg)  rotateY(0deg)  rotate(0deg); }
+      50%  { transform: rotateX(70deg) rotateY(40deg) rotate(180deg); }
+      100% { transform: rotateX(0deg)  rotateY(0deg)  rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- SCREEN 1: a note needs to be read -->
+  <div class="screen show" id="screen1">
+    <div class="intro">
+      <p class="type-line" id="line1"></p>
+      <p class="type-line" id="line2"></p>
+      <p class="type-line" id="line3"></p>
+    </div>
+    <div class="note-area" id="noteArea">
+      <div class="notif" onclick="showScreen('screen2')">
+        <div class="badge">1</div>
+        <div class="icon">💌</div>
+        <h2>A note needs to be read</h2>
+        <p>tap to open</p>
+      </div>
+      <div class="pointer">👆</div>
+    </div>
+  </div>
+
+  <!-- SCREEN 2: envelope -->
+  <div class="screen" id="screen2">
+    <p>From: Pluto ❤️</p>
+    <div class="envelope-wrap">
+      <div class="envelope" id="envelope" onclick="openEnvelope()">
+        <div class="card">For Madison</div>
+        <div class="pocket"></div>
+        <div class="flap"></div>
+        <div class="seal">❤️</div>
+      </div>
+    </div>
+    <p id="tapHint" style="margin-top:30px">tap the envelope</p>
+  </div>
+
+  <!-- SCREEN 3: the love letter -->
+  <div class="screen" id="screen3">
+    <div class="letter" id="letter">
+      <span class="corner tl">🌹🌸</span>
+      <span class="corner tr">🌸🌹</span>
+      <span class="corner bl">🌷🌹</span>
+      <span class="corner br">🌹🌷</span>
+      <h1>Dear Madison Small,</h1>
+      <div class="divider">❀ ✿ ❀ ✿ ❀</div>
+
+      <p>We matched on HER, and it was so random. I thought you were from Miami, but you were just visiting from Canada, and by the time we matched you weren't even here anymore. I thought you were pretty, but I didn't think much more of it.</p>
+
+      <p>In one of my first journal entries about you, I wrote that you were funny, nice, and said weird random things that were cute. I wasn't sure what we'd be. I wrote, "you never know." I think I know now.</p>
+
+      <p>You make me feel so loved. Cared for. Safe and secure. You make me feel comfortable, even in my own body. People have always left me feeling weird, or unsure whether they actually liked me. With you, that doubt is almost gone.</p>
+
+      <p>I never thought I'd fall for someone so strong. I follow your lead, and I love it. But you let me lead too, and it always feels equal. Never one-sided.</p>
+
+      <p>I love who you are as a person. Your smile, your cheeks, those beautiful big brown eyes, and how they widen when you get excited or see something you like. The way you stim. How you always have a meme ready for everything. How caring and thoughtful you are. I love how affectionate you are. You never stop touching me, and I never want you to. And I love being the one who gets to reassure you, every time you need it.</p>
+
+      <p>So here's the honest truth: I want you to be mine. Officially mine. I want to be able to say "this is my girlfriend," and hopefully, with time, my future wife. I want to build a real foundation with you, where we both keep growing and chasing our own goals while we build a life together. I want to bring you into my world as much as I want to be part of yours.</p>
+
+      <p>Not out of possession, but out of love. Everything I want with you comes from good intentions.</p>
+
+      <p>I really do love you, Madison. I want to know every part of you, even the parts you're ashamed or embarrassed of. I want to see all your weird faces, your smile, your laugh. I want to love you, real love.</p>
+
+      <p>You've been winning my heart this whole time. ❤️</p>
+
+      <p class="signoff">Love, Pluto</p>
+    </div>
+    <button class="main-btn" id="nextBtn" onclick="showScreen('screen4')">Next ➜</button>
+  </div>
+
+  <!-- SCREEN 4: the big question -->
+  <div class="screen" id="screen4">
+    <div class="rose-row">🌹🌸🌹🌸🌹</div>
+    <p class="question">Madison Small, will you be my girlfriend?</p>
+    <div class="rose-row">🌸🌹🌸🌹🌸</div>
+    <div>
+      <button class="main-btn" onclick="saidYes()">Yes ❤️</button>
+      <button id="noBtn">No</button>
+    </div>
+  </div>
+
+  <!-- SCREEN 5: she said yes -->
+  <div class="screen" id="screen5">
+    <p class="yay">Ooooouuu weee!! ❤️</p>
+    <p>We're officially each other's now ✨</p>
+  </div>
+
+  <script>
+    // switch from one screen to another
+    function showScreen(id) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('show'));
+      document.getElementById(id).classList.add('show');
+      window.scrollTo(0, 0);
+    }
+
+    // ===== the opening: words type out one letter at a time =====
+    const introLines = [
+      ['line1', 'Hey you...'],
+      ['line2', 'I wrote something for you.'],
+      ['line3', "It's been on my heart for a while ❤️"],
+    ];
+
+    function typeLine(id, text, done) {
+      const el = document.getElementById(id);
+      const chars = Array.from(text);   // keeps emojis in one piece
+      let i = 0;
+      el.classList.add('typing');
+      const timer = setInterval(() => {
+        el.textContent = chars.slice(0, ++i).join('');
+        if (i >= chars.length) {
+          clearInterval(timer);
+          el.classList.remove('typing');
+          setTimeout(done, 600);        // little pause before the next line
+        }
+      }, 70);
+    }
+
+    function runIntro(n = 0) {
+      if (n >= introLines.length) {
+        document.getElementById('noteArea').classList.add('show');
+        return;
+      }
+      const [id, text] = introLines[n];
+      typeLine(id, text, () => runIntro(n + 1));
+    }
+    setTimeout(runIntro, 800);
+
+    // the envelope opens in 3 steps, like real life
+    let opened = false;
+    function openEnvelope() {
+      if (opened) return;
+      opened = true;
+      const env = document.getElementById('envelope');
+      document.getElementById('tapHint').style.opacity = 0;
+      env.classList.add('open');                               // 1. flap opens
+      setTimeout(() => env.classList.add('pull'), 700);        // 2. letter slides out
+      setTimeout(() => env.classList.add('away'), 2100);       // 3. envelope drops away
+      setTimeout(showLetter, 2700);                            // 4. full letter appears
+    }
+
+    // show the letter, with each paragraph fading in one after another
+    function showLetter() {
+      const paragraphs = document.querySelectorAll('#letter p');
+      paragraphs.forEach((p, i) => {
+        p.style.animationDelay = (0.8 + i * 0.9) + 's';
+      });
+      document.getElementById('nextBtn').style.animationDelay = (0.8 + paragraphs.length * 0.9) + 's';
+      showScreen('screen3');
+    }
+
+    function saidYes() {
+      showScreen('screen5');
+      for (let i = 0; i < 60; i++) {
+        setTimeout(makeHeart, i * 100);
+      }
+    }
+
+    function makeHeart() {
+      const heart = document.createElement('div');
+      heart.className = 'float-heart';
+      heart.textContent = ['❤️', '💗', '💕', '🌹'][Math.floor(Math.random() * 4)];
+      heart.style.left = Math.random() * 100 + 'vw';
+      document.body.appendChild(heart);
+      setTimeout(() => heart.remove(), 4500);
+    }
+
+    // real-looking petals that drift down the whole time
+    // each color = [light center, middle, dark edge]
+    const petalColors = [
+      ['#FFD3DC', '#F49AAE', '#D9637C'],   // pink rose
+      ['#F7838F', '#D93A4E', '#9E1F33'],   // red rose
+      ['#FFE6EA', '#F9BCC8', '#EE8FA4'],   // blush
+      ['#F59AA6', '#E05A6E', '#B83246'],   // deep rose
+    ];
+
+    // a real rose petal shape: rounded, with a little dip at the top,
+    // shaded darker at the edges, with a soft shine and a faint vein
+    let petalCount = 0;
+    // a rose petal: a soft rounded oval that narrows to a point at the base,
+    // lighter near the base, deeper at the outer edge, with a curled rim
+    // and a soft shine so it looks cupped instead of flat
+    function petalSVG(size, light, mid, deep) {
+      const id = 'pg' + (petalCount++);
+      const squash = 0.65 + Math.random() * 0.35;   // every petal a little different
+      const tilt = Math.random() * 40 - 20;
+      return `
+        <svg viewBox="0 0 100 100" width="${size}" height="${size}"
+             style="transform: scaleX(${squash}) rotate(${tilt}deg)">
+          <defs>
+            <linearGradient id="${id}b" x1="50%" y1="100%" x2="50%" y2="0%">
+              <stop offset="0%"   stop-color="${light}"/>
+              <stop offset="45%"  stop-color="${mid}"/>
+              <stop offset="100%" stop-color="${deep}"/>
+            </linearGradient>
+            <radialGradient id="${id}s" cx="40%" cy="45%" r="45%">
+              <stop offset="0%"   stop-color="#fff" stop-opacity="0.45"/>
+              <stop offset="100%" stop-color="#fff" stop-opacity="0"/>
+            </radialGradient>
+          </defs>
+          <!-- petal body -->
+          <path d="M50 97 C34 90 14 72 12 48 C10 24 28 5 50 4 C72 3 90 22 88 47 C86 72 66 90 50 97 Z"
+                fill="url(#${id}b)" fill-opacity="0.92"/>
+          <!-- soft shine, makes it look cupped -->
+          <path d="M50 97 C34 90 14 72 12 48 C10 24 28 5 50 4 C72 3 90 22 88 47 C86 72 66 90 50 97 Z"
+                fill="url(#${id}s)"/>
+          <!-- curled rim along the top edge -->
+          <path d="M16 40 C22 16 40 8 52 8 C68 8 82 18 86 38"
+                stroke="${deep}" stroke-opacity="0.35" stroke-width="3"
+                fill="none" stroke-linecap="round"/>
+          <!-- faint veins from the base -->
+          <path d="M50 94 C48 72 47 50 49 22 M50 94 C42 76 34 58 30 36 M50 94 C58 76 66 58 70 36"
+                stroke="${deep}" stroke-opacity="0.12" stroke-width="1" fill="none"/>
+        </svg>`;
+    }
+
+    function makePetal() {
+      const fall = document.createElement('div');
+      fall.className = 'petal-fall';
+      const petal = document.createElement('div');
+      petal.className = 'petal';
+
+      const size = 14 + Math.random() * 22;
+      if (size < 20) petal.classList.add('far');
+      const [light, mid, deep] = petalColors[Math.floor(Math.random() * petalColors.length)];
+      petal.innerHTML = petalSVG(size, light, mid, deep);
+      petal.style.animationDuration = (2.5 + Math.random() * 2.5) + 's';
+
+      const duration = 8 + Math.random() * 6;
+      fall.style.left = Math.random() * 100 + 'vw';
+      fall.style.animationDuration = duration + 's';
+
+      fall.appendChild(petal);
+      document.body.appendChild(fall);
+      setTimeout(() => fall.remove(), duration * 1000);
+    }
+    setInterval(makePetal, 500);
+
+    // the "No" button runs away 😂
+    const noBtn = document.getElementById('noBtn');
+    function runAway() {
+      noBtn.style.position = 'fixed';
+      noBtn.style.left = Math.random() * (window.innerWidth - 120) + 'px';
+      noBtn.style.top = Math.random() * (window.innerHeight - 60) + 'px';
+    }
+    noBtn.addEventListener('mouseover', runAway);
+    noBtn.addEventListener('touchstart', (e) => { e.preventDefault(); runAway(); });
+  </script>
+
+</body>
+</html>
